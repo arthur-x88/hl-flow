@@ -1,0 +1,6 @@
+{"channel":"subscriptionResponse","data":{"method":"subscribe","subscription":{"type":"trades","coin":"BTC"}}}
+{"channel":"l2Book","data":{"coin":"BTC","time":1700000040000,"levels":[[{"px":"65000","sz":"0.5","n":2}],[{"px":"65001","sz":"0.4","n":3}]]}}
+{"channel":"trades","data":[{"coin":"BTC","side":"B","px":"65001","sz":"0.1","time":1700000040100,"tid":1},{"coin":"BTC","side":"A","px":"65000","sz":"0.2","time":1700000040200,"tid":2}]}
+{"channel":"trades","data":[{"coin":"BTC","side":"A","px":"65000","sz":"0.2","time":1700000040200,"tid":2},{"coin":"BTC","side":"B","px":"65002","sz":"0.3","time":1700000100100,"tid":3}]}
+{"channel":"l2Book","data":{"coin":"BTC","time":1700000100200,"levels":[[{"px":"65001","sz":"0.8","n":3}],[{"px":"65002","sz":"0.6","n":2}]]}}
+{"channel":"pong"}

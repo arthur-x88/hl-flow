@@ -1,0 +1,30 @@
+[package]
+name = "hyperliquid-stream"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.90"
+description = "Read-only Hyperliquid WebSocket market data with bounded delivery, reconnects, and deterministic replay."
+repository = "https://github.com/arthur-x88/hyperliquid-stream"
+license = "MIT"
+readme = "README.md"
+keywords = ["hyperliquid", "websocket", "market-data", "replay"]
+categories = ["finance", "asynchronous", "network-programming"]
+
+[dependencies]
+hyperliquid-primitives = { git = "https://github.com/arthur-x88/hyperliquid-primitives", rev = "36c92a5a57d3a8963b3677ca213d0ac694fae590" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "time", "sync", "signal"] }
+tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
+futures-util = "0.3"
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
+webpki-roots = "1"
+
+[dev-dependencies]
+rust_decimal = "1"
+rust_decimal_macros = "1"
+
+[lints.rust]
+unsafe_code = "forbid"
+missing_docs = "deny"
