@@ -1,5 +1,5 @@
 //! Executable examples and regression checks for the public market-data API.
-use hyperliquid_stream::{
+use hl_flow::{
     client::{Client, Config, TESTNET},
     primitives::{book::OrderBook, types::Coin},
     protocol::Event,

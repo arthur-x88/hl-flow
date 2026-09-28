@@ -243,9 +243,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6dbf3de79e51f3d586ab4cb9d5c3e2c14aa28ed23d180cf89b4df0454a69cc87"
 
 [[package]]
-name = "hyperliquid-primitives"
+name = "hl-depth"
 version = "0.1.0"
-source = "git+https://github.com/arthur-x88/hyperliquid-primitives?rev=36c92a5a57d3a8963b3677ca213d0ac694fae590#36c92a5a57d3a8963b3677ca213d0ac694fae590"
+source = "git+https://github.com/arthur-x88/hl-depth?rev=6f7501b751a468129110a5c9f7d07db56ef5d946#6f7501b751a468129110a5c9f7d07db56ef5d946"
 dependencies = [
  "rust_decimal",
  "serde",
@@ -253,11 +253,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "hyperliquid-stream"
+name = "hl-flow"
 version = "0.1.0"
 dependencies = [
  "futures-util",
- "hyperliquid-primitives",
+ "hl-depth",
  "rust_decimal",
  "rust_decimal_macros",
  "rustls",

@@ -1,17 +1,17 @@
 [package]
-name = "hyperliquid-stream"
+name = "hl-flow"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.90"
 description = "Read-only Hyperliquid WebSocket market data with bounded delivery, reconnects, and deterministic replay."
-repository = "https://github.com/arthur-x88/hyperliquid-stream"
+repository = "https://github.com/arthur-x88/hl-flow"
 license = "MIT"
 readme = "README.md"
 keywords = ["hyperliquid", "websocket", "market-data", "replay"]
 categories = ["finance", "asynchronous", "network-programming"]
 
 [dependencies]
-hyperliquid-primitives = { git = "https://github.com/arthur-x88/hyperliquid-primitives", rev = "36c92a5a57d3a8963b3677ca213d0ac694fae590" }
+hl-depth = { git = "https://github.com/arthur-x88/hl-depth", rev = "6f7501b751a468129110a5c9f7d07db56ef5d946" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"

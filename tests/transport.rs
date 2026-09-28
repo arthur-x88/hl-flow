@@ -1,6 +1,6 @@
 //! Executable examples and regression checks for the public market-data API.
 use futures_util::{SinkExt, StreamExt};
-use hyperliquid_stream::{
+use hl_flow::{
     client::{Client, Config, ReconnectPolicy},
     primitives::types::Coin,
     protocol::Event,

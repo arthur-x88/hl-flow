@@ -8,7 +8,7 @@ pub mod client;
 pub mod dedup;
 pub mod protocol;
 
-pub use hyperliquid_primitives as primitives;
+pub use hl_depth as primitives;
 
 /// Errors from decoding, transport, configuration, and downstream delivery.
 #[derive(Debug, thiserror::Error)]
