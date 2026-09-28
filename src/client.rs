@@ -1,6 +1,7 @@
 //! Async transport adapted around bounded delivery and an explicit reconnect budget.
 
 use crate::{
+    network::{tls_config, Network},
     primitives::types::Coin,
     protocol::{decode, subscriptions, Event},
     Error,
@@ -15,11 +16,6 @@ use tokio::{
 use tokio_tungstenite::{
     connect_async_tls_with_config, tungstenite::Message, Connector, MaybeTlsStream, WebSocketStream,
 };
-
-/// Mainnet public market-data endpoint.
-pub const MAINNET: &str = "wss://api.hyperliquid.xyz/ws";
-/// Testnet public market-data endpoint.
-pub const TESTNET: &str = "wss://api.hyperliquid-testnet.xyz/ws";
 
 /// Capped exponential delays, adapted from the original streaming reconnect policy.
 #[derive(Debug, Clone, Copy)]
@@ -54,8 +50,10 @@ impl ReconnectPolicy {
 /// Configuration for public trades and L2 snapshots for up to 20 distinct coins.
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// Mainnet/testnet endpoint, or a local WebSocket endpoint for integration tests.
-    pub endpoint: String,
+    /// The Hyperliquid deployment to subscribe to.
+    pub network: Network,
+    #[cfg(test)]
+    endpoint_override: Option<String>,
     /// Exact coin identifiers.
     pub coins: Vec<Coin>,
     /// Explicit reconnect budget.
@@ -71,8 +69,20 @@ pub struct Config {
 impl Config {
     /// Mainnet defaults with a 20-second heartbeat and a 50-second idle timeout.
     pub fn mainnet(coins: Vec<Coin>) -> Self {
+        Self::new(Network::Mainnet, coins)
+    }
+
+    /// Testnet defaults, using its distinct market universe.
+    pub fn testnet(coins: Vec<Coin>) -> Self {
+        Self::new(Network::Testnet, coins)
+    }
+
+    /// Default feed timing for an explicit Hyperliquid deployment.
+    pub fn new(network: Network, coins: Vec<Coin>) -> Self {
         Self {
-            endpoint: MAINNET.into(),
+            network,
+            #[cfg(test)]
+            endpoint_override: None,
             coins,
             reconnect: ReconnectPolicy::default(),
             ping_interval: Duration::from_secs(20),
@@ -81,13 +91,19 @@ impl Config {
         }
     }
 
+    /// The fixed Hyperliquid URL selected by this configuration.
+    pub fn endpoint(&self) -> &str {
+        #[cfg(test)]
+        if let Some(endpoint) = &self.endpoint_override {
+            return endpoint;
+        }
+        self.network.websocket_url()
+    }
+
     fn validate(&self) -> Result<(), Error> {
         let unique: std::collections::HashSet<_> = self.coins.iter().collect();
         if self.coins.is_empty() || self.coins.len() > 20 || unique.len() != self.coins.len() {
             return Err(Error::Config("provide 1..=20 distinct coins".into()));
-        }
-        if !(self.endpoint.starts_with("wss://") || self.endpoint.starts_with("ws://")) {
-            return Err(Error::Config("endpoint must use ws:// or wss://".into()));
         }
         if self.ping_interval.is_zero()
             || self.ping_interval >= self.idle_timeout
@@ -157,20 +173,11 @@ impl Client {
     }
 
     async fn session(&self, tx: &mpsc::Sender<Event>) -> Result<(), Error> {
-        // Select a provider locally: embedding applications may enable more than one.
-        let tls = rustls::ClientConfig::builder_with_provider(std::sync::Arc::new(
-            rustls::crypto::ring::default_provider(),
-        ))
-        .with_safe_default_protocol_versions()
-        .map_err(|e| Error::Config(e.to_string()))?
-        .with_root_certificates(rustls::RootCertStore::from_iter(
-            webpki_roots::TLS_SERVER_ROOTS.iter().cloned(),
-        ))
-        .with_no_client_auth();
+        let tls = tls_config()?;
         let (mut socket, _) = time::timeout(
             self.config.io_timeout,
             connect_async_tls_with_config(
-                &self.config.endpoint,
+                self.config.endpoint(),
                 None,
                 false,
                 Some(Connector::Rustls(std::sync::Arc::new(tls))),
@@ -203,12 +210,12 @@ impl Client {
                                 Event::Trades(trades) => trades.iter().all(|t| self.config.coins.contains(&t.coin)),
                                 _ => true,
                             };
-                            if !valid_coin { return Err(Error::Exchange("received an unrequested coin".into())); }
+                            if !valid_coin { return Err(Error::Hyperliquid("received an unrequested coin".into())); }
                             deliver(tx, event)?;
                         }
                         Some(Ok(Message::Ping(data))) => self.send(&mut socket, Message::Pong(data)).await?,
                         Some(Ok(Message::Pong(_) | Message::Frame(_))) => {},
-                        Some(Ok(Message::Binary(_))) => return Err(Error::Exchange("unexpected binary market frame".into())),
+                        Some(Ok(Message::Binary(_))) => return Err(Error::Hyperliquid("unexpected binary market frame".into())),
                         Some(Ok(Message::Close(_))) | None => return Err(Error::Transport("connection closed".into())),
                         Some(Err(e)) => return Err(Error::Transport(e.to_string())),
                     }
@@ -224,3 +231,6 @@ fn deliver(tx: &mpsc::Sender<Event>, event: Event) -> Result<(), Error> {
         mpsc::error::TrySendError::Closed(_) => Error::Closed,
     })
 }
+
+#[cfg(test)]
+mod tests;

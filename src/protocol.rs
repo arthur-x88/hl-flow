@@ -49,7 +49,7 @@ pub fn decode(text: &str) -> Result<Event, Error> {
     let channel = message
         .get("channel")
         .and_then(Value::as_str)
-        .ok_or_else(|| Error::Exchange("frame is missing a string channel".into()))?;
+        .ok_or_else(|| Error::Hyperliquid("frame is missing a string channel".into()))?;
     match channel {
         "trades" => {
             let trades: Vec<Trade> = serde_json::from_value(message["data"].clone())?;
@@ -65,7 +65,7 @@ pub fn decode(text: &str) -> Result<Event, Error> {
         }
         "subscriptionResponse" => Ok(Event::Subscribed),
         "pong" => Ok(Event::Pong),
-        "error" => Err(Error::Exchange(message["data"].to_string())),
+        "error" => Err(Error::Hyperliquid(message["data"].to_string())),
         other => Ok(Event::Ignored(other.to_owned())),
     }
 }

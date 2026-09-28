@@ -1,11 +1,11 @@
 //! Executable examples and regression checks for the public market-data API.
-use futures_util::{SinkExt, StreamExt};
-use hl_flow::{
+use crate::{
     client::{Client, Config, ReconnectPolicy},
     primitives::types::Coin,
     protocol::Event,
     Error,
 };
+use futures_util::{SinkExt, StreamExt};
 use std::time::Duration;
 use tokio::{net::TcpListener, sync::mpsc, time::timeout};
 use tokio_tungstenite::{accept_async, tungstenite::Message};
@@ -15,7 +15,7 @@ const BOOK: &str = r#"{"channel":"l2Book","data":{"coin":"BTC","time":1700000000
 async fn setup() -> (TcpListener, Config) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let mut config = Config::mainnet(vec![Coin::new("BTC").unwrap()]);
-    config.endpoint = format!("ws://{}", listener.local_addr().unwrap());
+    config.endpoint_override = Some(format!("ws://{}", listener.local_addr().unwrap()));
     config.reconnect = ReconnectPolicy {
         max_retries: 0,
         initial: Duration::from_millis(10),
@@ -180,14 +180,11 @@ async fn malformed_data_is_terminal_instead_of_retrying_forever() {
 }
 
 #[test]
-fn config_rejects_duplicate_coins_zero_timers_and_bad_schemes() {
+fn config_rejects_duplicate_coins_and_zero_timers() {
     let mut config = Config::mainnet(vec![Coin::new("BTC").unwrap(); 2]);
     assert!(Client::new(config.clone()).is_err());
     config.coins.pop();
     config.ping_interval = Duration::ZERO;
-    assert!(Client::new(config).is_err());
-    let mut config = Config::mainnet(vec![Coin::new("BTC").unwrap()]);
-    config.endpoint = "https://example.com".into();
     assert!(Client::new(config).is_err());
     let policy = ReconnectPolicy::default();
     assert_eq!(policy.delay(0), Duration::from_millis(500));

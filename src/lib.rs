@@ -6,6 +6,8 @@
 pub mod candle;
 pub mod client;
 pub mod dedup;
+pub mod info;
+pub mod network;
 pub mod protocol;
 
 pub use hl_depth as primitives;
@@ -16,15 +18,18 @@ pub enum Error {
     /// Invalid JSON or unexpected wire shape.
     #[error("invalid JSON: {0}")]
     Json(#[from] serde_json::Error),
+    /// Public Hyperliquid info request failed (HTTP status, timeout, or TLS).
+    #[error("Hyperliquid info request: {0}")]
+    Http(#[from] reqwest::Error),
     /// A market value or book violates its invariants.
     #[error(transparent)]
     Market(#[from] primitives::Error),
     /// Transport failed or timed out.
     #[error("transport: {0}")]
     Transport(String),
-    /// Exchange explicitly rejected a request.
-    #[error("exchange: {0}")]
-    Exchange(String),
+    /// Hyperliquid explicitly rejected a request or returned an unexpected payload.
+    #[error("Hyperliquid protocol: {0}")]
+    Hyperliquid(String),
     /// Configuration is not usable.
     #[error("configuration: {0}")]
     Config(String),

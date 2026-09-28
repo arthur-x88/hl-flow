@@ -135,3 +135,25 @@ fn candle_overflow_does_not_mutate_state() {
     assert!(bars.push(&trade(2, 2, "2", "1")).is_err());
     assert_eq!(bars.current(), before.as_ref());
 }
+
+#[test]
+fn hip4_books_and_trades_use_hash_coins_through_the_same_pipeline() {
+    let coin = Coin::new("#1231").unwrap();
+    for subscription in subscriptions(&coin) {
+        let value: serde_json::Value = serde_json::from_str(&subscription).unwrap();
+        assert_eq!(value["subscription"]["coin"], "#1231");
+    }
+    let event = decode(r##"{"channel":"l2Book","data":{"coin":"#1231","time":1000,"levels":[[{"px":"0.4","sz":"100","n":2}],[{"px":"0.45","sz":"50","n":1}]]}}"##).unwrap();
+    let Event::Book(snapshot) = event else {
+        panic!("expected outcome snapshot")
+    };
+    let mut book = hl_flow::primitives::book::OrderBook::new(coin.clone());
+    book.replace(snapshot).unwrap();
+    assert_eq!(book.spread(), Some(dec!(0.05)));
+    let Event::Trades(trades) = decode(r##"{"channel":"trades","data":[{"coin":"#1231","side":"B","px":"0.45","sz":"10","time":1000,"tid":7}]}"##).unwrap() else { panic!("expected outcome trade") };
+    let mut bars = CandleBuilder::new(coin, 1000).unwrap();
+    bars.push(&trades[0]).unwrap();
+    assert_eq!(bars.current().unwrap().volume, dec!(10));
+    assert_eq!(bars.current().unwrap().close, dec!(0.45));
+    assert!(decode(r##"{"channel":"trades","data":[{"coin":"+1231","side":"B","px":"0.45","sz":"10","time":1000,"tid":7}]}"##).is_err());
+}

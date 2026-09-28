@@ -1,6 +1,6 @@
 [package]
 name = "hl-flow"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.90"
 description = "Read-only Hyperliquid WebSocket market data with bounded delivery, reconnects, and deterministic replay."
@@ -11,7 +11,7 @@ keywords = ["hyperliquid", "websocket", "market-data", "replay"]
 categories = ["finance", "asynchronous", "network-programming"]
 
 [dependencies]
-hl-depth = { git = "https://github.com/arthur-x88/hl-depth", rev = "6f7501b751a468129110a5c9f7d07db56ef5d946" }
+hl-depth = { git = "https://github.com/arthur-x88/hl-depth", rev = "ae296602d4eaf16b4eb48b07e6ce0ff7e7a56d70" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
@@ -20,8 +20,10 @@ tokio-tungstenite = { version = "0.24", features = ["rustls-tls-webpki-roots"] }
 futures-util = "0.3"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-roots = "1"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 
 [dev-dependencies]
+tokio = { version = "1", features = ["io-util"] }
 rust_decimal = "1"
 rust_decimal_macros = "1"
 

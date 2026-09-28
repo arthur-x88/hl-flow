@@ -1,7 +1,9 @@
 //! Executable examples and regression checks for the public market-data API.
 use hl_flow::{
-    client::{Client, Config, TESTNET},
-    primitives::{book::OrderBook, types::Coin},
+    client::{Client, Config},
+    info::InfoClient,
+    network::Network,
+    primitives::{book::OrderBook, outcome::OutcomeId, types::Coin},
     protocol::Event,
 };
 use std::time::Duration;
@@ -18,15 +20,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if seconds == 0 || seconds > 3600 {
         return Err("duration must be 1..=3600 seconds".into());
     }
-    let mut config = Config::mainnet(vec![coin.clone()]);
-    match args.get(2).map(String::as_str) {
-        None | Some("mainnet") => {}
-        Some("testnet") => config.endpoint = TESTNET.into(),
-        _ => return Err("network must be mainnet or testnet".into()),
+    let network: Network = args.get(2).map_or("mainnet", String::as_str).parse()?;
+    let dex = coin.as_str().split_once(':').map(|(dex, _)| dex);
+    let info = InfoClient::new(network)?;
+    let catalog = if coin.as_str().starts_with('#') {
+        OutcomeId::try_from(&coin)?;
+        info.outcome_catalog().await?
+    } else {
+        info.catalog(dex).await?
+    };
+    let instrument = catalog
+        .resolve(&coin)
+        .ok_or_else(|| format!("unknown or unavailable Hyperliquid {network} coin: {coin}"))?;
+    if let Some(rules) = instrument.rules() {
+        eprintln!(
+            "Resolved {} ({:?}), szDecimals={}, priceDecimals={}",
+            instrument.label(),
+            instrument.kind(),
+            rules.size_decimals(),
+            rules.price_decimals()
+        );
+    } else {
+        eprintln!(
+            "Resolved {} (HIP-4 outcome); order precision unavailable in metadata",
+            instrument.label()
+        );
     }
+    let config = Config::new(network, vec![coin.clone()]);
     eprintln!(
         "Public read-only feed: {} | coin={coin} | duration={seconds}s",
-        config.endpoint
+        config.endpoint()
     );
     let (tx, mut rx) = mpsc::channel(256);
     let mut worker = tokio::spawn(Client::new(config)?.run(tx));
